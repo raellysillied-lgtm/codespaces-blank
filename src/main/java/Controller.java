@@ -4,6 +4,9 @@ import javafx.scene.control.Button;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.text.*;
+import javafx.animation.*;
+import javafx.scene.transform.Rotate;
+import javafx.util.Duration;
 
 import java.util.ArrayList;
 
@@ -36,7 +39,7 @@ public class Controller {
             currentLetter++;
             System.out.println(currentGuess);
         } else {
-            if (!wordCorrect) {
+            if (wordCorrect) {
                 System.out.println("you already got the word brochacho");
                 return;
             }
@@ -57,12 +60,12 @@ public class Controller {
     }
 
     public String submitGuess() { // IMPORTANT: this is like the bulk of the logic LOL
-        if (currentAttempt > maxAttempts) {
+        if (currentAttempt > maxAttempts) { // shouldnt run
             System.out.println("ur out of guesses lmao");
             return "Out of guesses";
         }
 
-        if (wordCorrect) {
+        if (wordCorrect) { // shouldnt run
             System.out.println("you already got the word brochacho");
             return "Word has been gotten";
         }
@@ -154,8 +157,35 @@ public class Controller {
             return "WIN";
 
         }
+        if (!wordCorrect && currentAttempt >= (maxAttempts + 1)) {
+            return "LOSS";
+        }
         currentGuess = "";
         return "No error";
+
+    }
+
+    private void animateTile (Rectangle tile, Text character, Color newColor) { // scrapped for now
+        for (int i = 0; i < currentGuess.length(); i++) { // first pass for greens
+
+            RotateTransition flipOutTile = new RotateTransition(Duration.millis(150), tile);
+            flipOutTile.setAxis(Rotate.Y_AXIS);
+            flipOutTile.setFromAngle(0);
+            flipOutTile.setToAngle(90);
+            flipOutTile.setInterpolator(Interpolator.EASE_IN);
+
+            RotateTransition flipInTile = new RotateTransition(Duration.millis(150), tile);
+            flipOutTile.setAxis(Rotate.Y_AXIS);
+            flipInTile.setFromAngle(90);
+            flipInTile.setToAngle(0);
+            flipInTile.setInterpolator(Interpolator.EASE_IN);
+
+            flipOutTile.setOnFinished(e -> {
+                flipInTile.play();
+            });
+
+            flipOutTile.play();
+        }
     }
 
     public void addKeys(Button b, int index, String keyboardRow) { // import keyboard rows
@@ -208,6 +238,36 @@ public class Controller {
             }
         }
         return null;
+    }
+
+    public void resetGameState() {
+        currentAttempt = 1;
+        currentLetter = 1;
+        currentGuess = "";
+        wordCorrect = false;
+
+        greenButtons.clear();
+        yellowButtons.clear();
+
+        // Reset grid tiles
+        for (int row = 0; row < tiles.length; row++) {
+            for (int col = 0; col < tiles[row].length; col++) {
+                tiles[row][col].setFill(Color.WHITESMOKE);
+                tiles[row][col].setStroke(Color.LIGHTGRAY);
+                characters[row][col].setText("");
+                characters[row][col].setFill(Color.BLACK);
+            }
+        }
+
+        // Reset keyboard colors
+        Button[][] rows = { topKeyboardStyle, middleKeyboardStyle, bottomKeyboardStyle };
+        for (Button[] r : rows) {
+            for (Button b : r) {
+                if (b != null) {
+                    b.setStyle("-fx-background-color: #d3d6da; -fx-text-fill: black; -fx-font-size: 19px; -fx-font-weight: bold;");
+                }
+            }
+        }
     }
 
 }

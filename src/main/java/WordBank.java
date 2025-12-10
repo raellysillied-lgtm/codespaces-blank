@@ -8,14 +8,15 @@ import java.io.InputStreamReader;
 import java.util.Random;
 
 public class WordBank {
-    String fileLocation = "src/main/java/resources/words.txt";
+    String fileLocationGuess = "src/main/java/resources/allowed guesses.txt";
+    String fileLocationFinal = "src/main/java/resources/valid final words.txt";
     public boolean checkWord(String word) {
         String targetWord = word.trim().toLowerCase();
         if (targetWord.length() != 5) {
             System.out.println("Word isn't 5 characters.");
             return false;
         }
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(fileLocation)))) {
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(fileLocationGuess)))) {
             String line;
             while ((line = reader.readLine()) != null) {
                 if (line.trim().toLowerCase().equals(targetWord)) {
@@ -32,7 +33,7 @@ public class WordBank {
     }
 
     public String randomWord() {
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(fileLocation)))) {
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(fileLocationFinal)))) {
             Random rand = new Random();
             String choice = null;
             String line;

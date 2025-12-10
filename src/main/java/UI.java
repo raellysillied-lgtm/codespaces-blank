@@ -1,5 +1,6 @@
 package main.java;
 
+import javafx.animation.TranslateTransition;
 import javafx.application.Application;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -18,9 +19,12 @@ import javafx.scene.layout.StackPane;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.Random;
+
 import javafx.animation.FadeTransition;
 import javafx.util.Duration;
 import javafx.scene.control.Label;
+import javafx.animation.*;
 
 public class UI extends Application {
 
@@ -35,8 +39,16 @@ public class UI extends Application {
     private Text[][] characters = new Text[rows][cols];
     private static String correctWord;
     private Controller controller = new Controller("", tiles, characters, rows);
-    private StackPane guessingScreen = new StackPane();
     private boolean freezeGuessingInput = false;
+    private Label currentMessageCheck = null;
+
+    private StackPane guessingScreen = new StackPane(); // the full screen for when you're guessing the word
+    private Scene scene; // the scene lol
+    private VBox rootChooser; // the screen for when you're choosing the word to be guessed
+        private PasswordField chosenWord; // the rest of these are part of rootChooser
+        private Button submit;
+        private Button random;
+        private Text hello;
 
     @Override
     public void start(Stage primaryStage) {
@@ -143,7 +155,12 @@ public class UI extends Application {
                     showWinScreen();
                     return;
                 }
-                showMessage(errorMessage, guessingScreen, 0.4);
+                if (errorMessage.equals("LOSS")) {
+                    showMessage(correctWord.toUpperCase(), guessingScreen, 3, false);
+                    showLossScreen();
+                    return;
+                }
+                showMessage(errorMessage, guessingScreen, 0.5, true);
             }
         });
         bottomKeyboardRow.getChildren().add(enter);
@@ -196,16 +213,16 @@ public class UI extends Application {
         primaryStage.setResizable(false);
 
         // Choosing screen
-        Text hello = new Text("Hello, what is the 5-letter word you want your friend to guess for?");
+        hello = new Text("Hello, what is the 5-letter word you want your friend to guess for?");
         hello.setFont(new Font(20));
-        PasswordField chosenWord = new PasswordField();
+        chosenWord = new PasswordField();
         chosenWord.setStyle("-fx-background-color: white; -fx-border-color: grey; -fx-border-width: 2px; -fx-border-radius: 5px;");
         chosenWord.setPromptText("Enter word");
         chosenWord.setAlignment(Pos.CENTER);
         chosenWord.setPrefWidth(120);
         chosenWord.setMaxWidth(120);
         chosenWord.setPrefHeight(20);
-        Button submit = new Button("GO");
+        submit = new Button("GO");
         submit.setPrefSize(48, 20);
         submit.setStyle("-fx-background-color: #6aaa64; -fx-border-radius: 5px; -fx-text-fill: white; ");
         submit.setFont(Font.font("Trebuchet MS", FontWeight.BOLD, 14));
@@ -216,7 +233,7 @@ public class UI extends Application {
         wordGiver.setAlignment(Pos.CENTER);
         Rectangle divider = new Rectangle(320,2);
         divider.setFill(Variables.WORDLE_YELLOW);;
-        Button random = new Button("Load a random word!");
+        random = new Button("Load a random word!");
         random.setPrefWidth(200);
         random.setPrefHeight(30);
         random.setStyle("-fx-background-color: BLACK; -fx-text-fill: white;");
@@ -226,11 +243,12 @@ public class UI extends Application {
         });
 
         // Actually setting up the chooser root
-        VBox rootChooser = new VBox(20, hello, wordGiver, divider, random);
+        rootChooser = new VBox(20, hello, wordGiver, divider, random);
         rootChooser.setAlignment(Pos.CENTER);
 
         // Pre-maturely set scene and stage
-        Scene scene = new Scene(rootChooser, 640, 740);
+        scene = new Scene(rootChooser, 640, 740);
+        scene.setFill(Color.WHITESMOKE);
         primaryStage.setScene(scene);
 
         // Setup to take in physical keyboard inputs
@@ -258,7 +276,12 @@ public class UI extends Application {
                             showWinScreen();
                             return;
                         }
-                        showMessage(errorMessage, guessingScreen, 0.4);
+                        if (errorMessage.equals("LOSS")) {
+                            showMessage(correctWord.toUpperCase(), guessingScreen, 3, false);
+                            showLossScreen();
+                            return;
+                        }
+                        showMessage(errorMessage, guessingScreen, 0.5, true);
                         break;
                     }
 
@@ -280,6 +303,7 @@ public class UI extends Application {
                 hello.setText("Invalid input, try again.");
             } else {
                 correctWord = chosenWord.getText().toLowerCase();
+                controller.correctWord = correctWord;
                 System.out.println(correctWord);
                 controller.correctWord = chosenWord.getText().toLowerCase(); // controlaa
                 scene.setRoot(guessingScreen);
@@ -287,6 +311,7 @@ public class UI extends Application {
                 submit.setDisable(true);
                 random.setDisable(true);
                 guessingScreen.setDisable(false);
+                freezeGuessingInput = false;
             }
         });
 
@@ -304,39 +329,101 @@ public class UI extends Application {
         primaryStage.show();
     }
 
-    private void showMessage(String message, StackPane screen, double seconds) {
+    private void showMessage(String message, StackPane screen, double seconds, boolean shake) {
+        if (currentMessageCheck != null) {
+            screen.getChildren().remove(currentMessageCheck);
+        }
         Label userFB = new Label(message);
+        currentMessageCheck = userFB;
         userFB.setFont(Font.font("Arial", FontPosture.ITALIC, 16));
         userFB.setStyle("-fx-background-color: black; -fx-background-radius: 6px; -fx-text-fill: white; -fx-padding: 10px 16px;");
-        userFB.setOpacity(0);
+        userFB.setOpacity(1);
         userFB.setAlignment(Pos.CENTER);
         userFB.setTranslateY(-330);
         userFB.setPrefHeight(40);
         screen.getChildren().add(userFB);
 
-        FadeTransition fadeIn = new FadeTransition(Duration.millis(20), userFB);
-        fadeIn.setFromValue(0);
-        fadeIn.setToValue(1);
+        if (shake) {
+            Timeline timeline = new Timeline(
+                    new KeyFrame(Duration.millis(0),   new KeyValue(userFB.translateXProperty(), 0)),
+                    new KeyFrame(Duration.millis(50),  new KeyValue(userFB.translateXProperty(), -6)),
+                    new KeyFrame(Duration.millis(100), new KeyValue(userFB.translateXProperty(), 6)),
+                    new KeyFrame(Duration.millis(150), new KeyValue(userFB.translateXProperty(), -2)),
+                    new KeyFrame(Duration.millis(200), new KeyValue(userFB.translateXProperty(), 2)),
+                    new KeyFrame(Duration.millis(250), new KeyValue(userFB.translateXProperty(), 0))
+            );
+            timeline.play();
+
+        }
 
         FadeTransition fadeOut = new FadeTransition(Duration.millis(500), userFB);
         fadeOut.setFromValue(1);
         fadeOut.setToValue(0);
         fadeOut.setDelay(Duration.seconds(seconds));
+        fadeOut.setOnFinished(e -> screen.getChildren().remove(userFB));
 
-        fadeIn.setOnFinished(e -> fadeOut.play());
-        fadeOut.setOnFinished(e -> screen.getChildren().remove(screen));
-
-        fadeIn.play();
+        fadeOut.play();
     }
 
     public void showWinScreen() {
         freezeGuessingInput = true;
-        String[] winMessages = {"Genius", "Magnificent", "Impressive", "Splendid", "Phew"};
-        if (rows - (controller.currentAttempt) == 0) {
-            showMessage(winMessages[4], guessingScreen, 4);
+        String[] winMessages = {"Genius", "Magnificent", "Impressive", "Splendid", "Great", "Phew"};
+        if (controller.currentAttempt == (rows + 1)) {
+            showMessage("Phew", guessingScreen, 4, false);
         } else {
-            showMessage(winMessages[(controller.currentAttempt - 1)], guessingScreen, 4);
+            showMessage(winMessages[(controller.currentAttempt - 2)], guessingScreen, 4, false);
         }
+        endScreen();
+    }
+
+    public void showLossScreen() {
+        freezeGuessingInput = true;
+        endScreen();
+    }
+
+    public void endScreen() {
+        new Timeline(new KeyFrame(Duration.seconds(3), e -> repromptAndRestart())).play();
+        FadeTransition fadeout = new FadeTransition(Duration.millis(1000), guessingScreen);
+        fadeout.setFromValue(1);
+        fadeout.setToValue(0);
+        fadeout.setDelay(Duration.seconds(2));
+        fadeout.play();
+    }
+
+    public void repromptAndRestart() {
+        // Reset UI controls on the choosing screen
+        chosenWord.clear();
+        chosenWord.setDisable(false);
+        submit.setDisable(false);
+        random.setDisable(false);
+        hello.setText("Enter a 5-letter word:");
+
+        // Switch back to choosing screen and animation
+        scene.setRoot(rootChooser);
+        int randomTransition = new Random().nextInt(4) + 1;
+        if (randomTransition % 2 == 0) { // == 2 or 4
+            rootChooser.setTranslateX(640 * (randomTransition - 3));
+        } else { // == 1 or 3
+            rootChooser.setTranslateY(740 * (randomTransition - 2));
+        }
+        TranslateTransition slide = new TranslateTransition(Duration.seconds(1), rootChooser);
+        if (randomTransition % 2 == 0) {
+            slide.setFromX(640 * (randomTransition - 3));
+        } else {
+            slide.setFromY(740 * (randomTransition - 2));
+        }
+        slide.setToX(0);
+        slide.setToY(0);
+        slide.setInterpolator(Interpolator.EASE_OUT);
+        slide.play();
+        slide.setOnFinished(e -> { // reset properties of the guessing screen lol
+            guessingScreen.setOpacity(1);
+            guessingScreen.setTranslateX(0);
+            guessingScreen.setTranslateY(0);
+        });
+
+        // Reset controller + board
+        controller.resetGameState();
     }
 
     public static void main(String[] args) {
