@@ -1,10 +1,12 @@
-package main.java;
+package main.java.edu.sdccd.cisc190.wordel;
 
 import javafx.scene.paint.Color;
 
-public class Variables {
-    // public enum LetterState {CORRECT, PRESENT, ABSENT}
-    // public enum KeyboardState {UNCHECKED, PRESENT, FOUND, ABSENT}
+    /**
+     * Mainly to store color codes
+    **/
+
+public class Constants {
     static final Color WORDLE_GREEN = Color.web("#6aaa64");
     static final Color WORDLE_YELLOW = Color.web("#c9b458");
     static final Color WORDLE_GRAY = Color.web("#787c7e");

@@ -1,4 +1,4 @@
-package main.java;
+package main.java.edu.sdccd.cisc190.wordel;
 
 import javafx.animation.TranslateTransition;
 import javafx.application.Application;
@@ -12,7 +12,6 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
-import javafx.scene.transform.Rotate;
 import javafx.stage.Stage;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
@@ -29,23 +28,24 @@ import javafx.util.Duration;
 import javafx.scene.control.Label;
 import javafx.animation.*;
 
+    /**
+    * The main visual component of this dual player Wordle adaption
+    **/
+
 public class UI extends Application {
 
-    /*
-    i did NOT format this well, in truth the code between main.java.UI and "controller" (its more like a controller and model
-    mix tbh) is just really messy
-     */
-
-    public int rows = 6; // guesses allowed (base 6)
+    private static int rows = 6; // guesses allowed (base 6)
     private static int cols = 5; // word length lol
     private Rectangle[][] tiles = new Rectangle[rows][cols];
     private Text[][] characters = new Text[rows][cols];
+    GridPane wordGrid;
     private static String correctWord;
     private Controller controller = new Controller("", tiles, characters, rows);
     private boolean freezeGuessingInput = false;
     private Label currentMessageCheck = null;
 
     private StackPane guessingScreen = new StackPane(); // the full screen for when you're guessing the word
+    private HBox playerStats = new HBox();
     private Scene scene; // the scene lol
     private VBox rootChooser; // the screen for when you're choosing the word to be guessed
         private PasswordField chosenWord; // the rest of these are part of rootChooser
@@ -57,49 +57,46 @@ public class UI extends Application {
     private int[] playerAttempts = {rows, rows};
     Timer timer;
 
-    @Override
+    private final WordBank wordBank = new WordBank();
+
+    @Override // override the original application method
     public void start(Stage primaryStage) {
         primaryStage.setTitle("Wordel");
 
 
         // Wordle tiles
-        GridPane wordGrid = new GridPane();
+        wordGrid = new GridPane();
         wordGrid.setAlignment(Pos.TOP_CENTER);
         wordGrid.setTranslateY(20);
         wordGrid.setHgap(5);
         wordGrid.setVgap(5);
-        for (int row = 0; row < rows; row++) { // scan each row (up to down)
-            for (int col = 0; col < cols; col++) { // scan each column (left to right)
-                Rectangle tile = new Rectangle(55, 55); // add box tile
-                tile.setFill(Color.WHITESMOKE);
-                tile.setStrokeWidth(1.5);
-                tile.setStroke(Color.LIGHTGRAY);
-                tiles[row][col] = tile; // save reference/"pointer"
-
-                // Text character = new Text(Integer.toString(col) + ", " + Integer.toString(row));
-                Text character = new Text(""); // add text overlay
-                character.setFont(Font.font("Arial", FontWeight.BOLD, 30));
-                character.setFill(Color.BLACK);
-                characters[row][col] = character; // save reference/"pointer"
-
-                StackPane tilePane = new StackPane(); // stackpane for layering and centering
-                tilePane.getChildren().addAll(tile, character);
-                wordGrid.add(tilePane, col, row); // add to grid pane
-            }
-        }
+        createGrid();
 
         // player icon lol and timer stuff
-        Image playerIcon = new Image("file:src/main/java/resources/icon p" + ((playerTurn % 2) + 1) + ".png");
+        Image playerIcon = new Image("file:src/main/java/edu/sdccd/cisc190/wordel/resources/icon p" + ((playerTurn % 2) + 1) + ".png");
         ImageView playerIconView = new ImageView(playerIcon);
         playerIconView.setFitHeight(80);
         playerIconView.setFitWidth(80);
         playerIconView.setPreserveRatio(true);
-        playerIconView.setTranslateX(-154);
-        playerIconView.setTranslateY(296);
+        playerIconView.setTranslateX(0);
+        playerIconView.setTranslateY(0);
+        Rectangle playerDivider = new Rectangle(3, 120);
+        playerDivider.setFill(Color.web("#222034"));
+        playerDivider.setTranslateX(0);
+        playerDivider.setTranslateY(0);
         Label countdown = new Label("0");
-        countdown.setTranslateX(146);
-        countdown.setTranslateY(296);
+        countdown.setAlignment(Pos.CENTER);
+        countdown.setPrefWidth(200);
+        countdown.setTranslateX(-66);
+        countdown.setTranslateY(0);
         countdown.setStyle("-fx-font-family: 'Segoe UI'; -fx-font-size: 36px; -fx-text-fill: #222034; -fx-font-style: italic;");
+        HBox playerStats = new HBox(100);
+        playerStats.setAlignment(Pos.CENTER);
+        playerStats.setTranslateX(60);
+        playerStats.setTranslateY(6);
+        playerStats.getChildren().add(playerIconView);
+        playerStats.getChildren().add(playerDivider);
+        playerStats.getChildren().add(countdown);
 
         // Keyboard AHHHHHH
         HBox topKeyboardRow = new HBox(6); // top keyboard row
@@ -225,18 +222,11 @@ public class UI extends Application {
         keyboard.setAlignment(Pos.CENTER);
         keyboard.setTranslateY(10);
 
-        Rectangle playerDivider = new Rectangle(3, 120);
-        playerDivider.setFill(Color.web("#222034"));
-        playerDivider.setTranslateX(1);
-        playerDivider.setTranslateY(300);
-
         // Main layout of children of the guessing root
-        VBox rootGuessing = new VBox(20, wordGrid, keyboard);
-        rootGuessing.setAlignment(Pos.TOP_CENTER);
+        VBox rootGuessing = new VBox(20, wordGrid, keyboard, playerStats);
+        rootGuessing.setAlignment(Pos.CENTER);
+        rootGuessing.setTranslateY(-12);
         guessingScreen.getChildren().add(rootGuessing);
-        guessingScreen.getChildren().add(playerIconView);
-        guessingScreen.getChildren().add(countdown);
-        guessingScreen.getChildren().add(playerDivider);
         primaryStage.setResizable(false);
 
         // Choosing screen
@@ -259,14 +249,13 @@ public class UI extends Application {
         HBox wordGiver = new HBox(10, chosenWord, submit);
         wordGiver.setAlignment(Pos.CENTER);
         Rectangle divider = new Rectangle(320,2);
-        divider.setFill(Variables.WORDLE_YELLOW);;
+        divider.setFill(Constants.WORDLE_YELLOW);;
         random = new Button("Load a random word!");
         random.setPrefWidth(200);
         random.setPrefHeight(30);
         random.setStyle("-fx-background-color: BLACK; -fx-text-fill: white;");
         random.setOnAction(e -> {
-            WordBank getRandom = new WordBank();
-            chosenWord.setText(getRandom.randomWord());
+            chosenWord.setText(wordBank.randomWord());
         });
 
         // Actually setting up the chooser root
@@ -283,10 +272,10 @@ public class UI extends Application {
             if (freezeGuessingInput) {
                 return;
             }
-        KeyCode code = e.getCode();
-        if (controller == null) {
-            return;
-        }
+            KeyCode code = e.getCode();
+            if (controller == null) {
+                return;
+            }
             switch (code) {
                 case BACK_SPACE:
                     controller.backspace();
@@ -310,7 +299,6 @@ public class UI extends Application {
                         showMessage(errorMessage, guessingScreen, 0.5, true);
                         break;
                     }
-
                 default:
                     if (code.isLetterKey()) {
                         controller.addCharacter(code.getName().toLowerCase().charAt(0));
@@ -322,8 +310,7 @@ public class UI extends Application {
         // Okay, this changes the root if proper word is given on the choosing screen
         chosenWord.setOnAction(e -> {
             String givenWord = chosenWord.getText();
-            WordBank checkBank = new WordBank();
-            boolean isValid = checkBank.checkWord(givenWord);
+            boolean isValid = wordBank.checkWord(givenWord);
             if (!isValid) {
                 chosenWord.setText("");
                 hello.setText("Invalid input, try again.");
@@ -338,13 +325,13 @@ public class UI extends Application {
                 random.setDisable(true);
                 guessingScreen.setDisable(false);
                 freezeGuessingInput = false;
-                timer = new Timer(countdown, (6 * 2) + 0);
+                timer = new Timer(countdown, (60 * 2) + 0); // 120 seconds = 2 minutes
                 timer.start();
             }
         });
 
-        // icon bc why not
-        try (FileInputStream image = new FileInputStream("src/main/java/resources/wordel icon LOL.png")) {
+        // Application icon
+        try (FileInputStream image = new FileInputStream("src/main/java/edu/sdccd/cisc190/wordel/resources/wordel icon LOL.png")) {
             Image icon = new Image(image);
             primaryStage.getIcons().add(icon);
         } catch (FileNotFoundException e) {
@@ -353,11 +340,33 @@ public class UI extends Application {
             System.out.println("Error reading file");
         }
 
-        // showtime
+        // Show the application
         primaryStage.show();
     }
 
-    private void showMessage(String message, StackPane screen, double seconds, boolean shake) {
+    private void createGrid() { // GridPane wordGrid
+        for (int row = 0; row < rows; row++) { // scan each row (up to down)
+            for (int col = 0; col < cols; col++) { // scan each column (left to right)
+                Rectangle tile = new Rectangle(55, 55); // add box tile
+                tile.setFill(Color.WHITESMOKE);
+                tile.setStrokeWidth(1.5);
+                tile.setStroke(Color.LIGHTGRAY);
+                tiles[row][col] = tile; // save reference/"pointer" (this is does throughout to modify UI)
+
+                // Text character = new Text(Integer.toString(col) + ", " + Integer.toString(row));
+                Text character = new Text(""); // add text overlay
+                character.setFont(Font.font("Arial", FontWeight.BOLD, 30));
+                character.setFill(Color.BLACK);
+                characters[row][col] = character; // save reference/"pointer"
+
+                StackPane tilePane = new StackPane(); // stackpane for layering and centering
+                tilePane.getChildren().addAll(tile, character);
+                wordGrid.add(tilePane, col, row); // add to grid pane
+            }
+        }
+    }
+
+    private void showMessage(String message, StackPane screen, double seconds, boolean shake) { // toast message onscreen for user feedback
         if (currentMessageCheck != null) {
             screen.getChildren().remove(currentMessageCheck);
         }
@@ -367,7 +376,7 @@ public class UI extends Application {
         userFB.setStyle("-fx-background-color: black; -fx-background-radius: 6px; -fx-text-fill: white; -fx-padding: 10px 16px;");
         userFB.setOpacity(1);
         userFB.setAlignment(Pos.CENTER);
-        userFB.setTranslateY(-330);
+        userFB.setTranslateY(-329);
         userFB.setPrefHeight(40);
         screen.getChildren().add(userFB);
 
@@ -392,6 +401,11 @@ public class UI extends Application {
 
         fadeOut.play();
     }
+
+        /**
+         * Using multithreading to create a countdown timer
+         * Background thread used to update the timer, uses UI thread when updating UI elements
+         **/
 
     public class Timer extends Thread {
         private int countDown;
@@ -453,6 +467,7 @@ public class UI extends Application {
     public void showLossScreen() {
         freezeGuessingInput = true;
         showMessage(correctWord.toUpperCase(), guessingScreen, 3, false);
+        playerAttempts[playerTurn % 2]--; // decrease the number of guesses they get in the future
         endScreen();
     }
 
@@ -467,16 +482,33 @@ public class UI extends Application {
 
         fadeout.play();
         timer.stopTimer();
-        playerAttempts[playerTurn % 2]--;
     }
 
     public void repromptAndRestart() {
-        // Reset UI controls on the choosing screen
-        chosenWord.clear();
-        chosenWord.setDisable(false);
-        submit.setDisable(false);
-        random.setDisable(false);
-        hello.setText("Enter a 5-letter word:");
+        if (playerAttempts[playerTurn % 2] <= 0) {
+            System.out.println("Player " + ((playerTurn % 2) + 1) + " has lost!");
+            rootChooser.getChildren().retainAll(hello);
+            hello.setText("Player " + ((playerTurn % 2) + 1) + " has lost!");
+            FadeTransition fadeOut = new FadeTransition(Duration.millis(1000), rootChooser);
+            fadeOut.setFromValue(1);
+            fadeOut.setToValue(0);
+            fadeOut.setDelay(Duration.seconds(3));
+            fadeOut.setOnFinished(e -> Platform.exit());
+
+            fadeOut.play();
+
+        } else {
+            // change turn and rebuild the board
+            playerTurn++;
+            rows = playerAttempts[playerTurn % 2];
+            rebuildBoard();
+            // Reset UI controls on the choosing screen
+            chosenWord.clear();
+            chosenWord.setDisable(false);
+            submit.setDisable(false);
+            random.setDisable(false);
+            hello.setText("Enter a 5-letter word:");
+        }
 
         // Switch back to choosing screen and animation
         scene.setRoot(rootChooser);
@@ -496,32 +528,43 @@ public class UI extends Application {
         slide.setToY(0);
         slide.setInterpolator(Interpolator.EASE_OUT);
         slide.play();
-        slide.setOnFinished(e -> { // reset properties of the guessing screen lol
+        slide.setOnFinished(e -> { // reset properties of the guessing screen
             guessingScreen.setOpacity(1);
             guessingScreen.setTranslateX(0);
             guessingScreen.setTranslateY(0);
         });
 
         // Reset controller + board
-        playerTurn++;
-        rows = 4; // playerAttempts[playerTurn % 2];
         controller.resetGameState();
         updatePlayerIcon();
     }
 
+    public void rebuildBoard() {
+        tiles = new Rectangle[rows][cols];
+        characters = new Text[rows][cols];
+        wordGrid.getChildren().clear(); // remove everything from the current grid
+        createGrid(); // remake the grid
+
+        // refresh controller manually
+        controller.correctWord = "";
+        controller.tiles = tiles;
+        controller.characters = characters;
+        controller.maxAttempts = rows;
+    }
+
     public void updatePlayerIcon() {
         // Update the player icon based on the current player turn
-        Image playerIcon = new Image("file:src/main/java/resources/icon p" + ((playerTurn % 2) + 1) + ".png");
+        Image playerIcon = new Image("file:src/main/java/edu/sdccd/cisc190/wordel/resources/icon p" + ((playerTurn % 2) + 1) + ".png");
         ImageView playerIconView = new ImageView(playerIcon);
         playerIconView.setFitHeight(80);
         playerIconView.setFitWidth(80);
         playerIconView.setPreserveRatio(true);
-        playerIconView.setTranslateX(-154);
-        playerIconView.setTranslateY(296);
+        playerIconView.setTranslateX(0);
+        playerIconView.setTranslateY(0);
 
         // Update the guessing screen with the new player icon
-        guessingScreen.getChildren().removeIf(child -> child instanceof ImageView); // Remove the old icon
-        guessingScreen.getChildren().add(playerIconView); // Add the new icon
+        playerStats.getChildren().removeIf(child -> child instanceof ImageView); // Remove the old icon
+        playerStats.getChildren().add(playerIconView); // Add the new icon
     }
 
     public static void main(String[] args) {

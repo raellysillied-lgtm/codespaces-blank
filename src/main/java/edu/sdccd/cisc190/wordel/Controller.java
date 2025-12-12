@@ -1,4 +1,4 @@
-package main.java;
+package main.java.edu.sdccd.cisc190.wordel;
 
 import javafx.scene.control.Button;
 import javafx.scene.paint.Color;
@@ -10,20 +10,27 @@ import javafx.util.Duration;
 
 import java.util.ArrayList;
 
+    /**
+     * Serves as a mix of a controller and model that processes the base logic of the wordle play screen
+     * Uses references in order to update
+     * Information console text used to debug and catch errors
+    **/
+
 public class Controller {
     public String correctWord;
     private int currentLetter = 1; // column + 1
     public int currentAttempt = 1; // row + 1
-    private int maxAttempts;
+    public int maxAttempts;
     private String currentGuess = "";
-    private Rectangle[][] tiles; // copy reference/"pointer" (heap) (row, column)
-    private Text[][] characters; // same as above
+    public Rectangle[][] tiles; // copy reference/"pointer" (heap) (row, column)
+    public Text[][] characters; // same as above
     private ArrayList<String> greenButtons = new ArrayList<String>();
     private ArrayList<String> yellowButtons = new ArrayList<String>();
     private Button[] topKeyboardStyle = new Button[10];  // Q-P
     private Button[] middleKeyboardStyle = new Button[9]; // A-L
     private Button[] bottomKeyboardStyle = new Button[7]; // Z-M
     private boolean wordCorrect = false;
+    private final WordBank checkGuess = new WordBank();
 
     public Controller(String correctWord, Rectangle[][] tiles, Text[][] characters, int maxAttempts) { // update these spare copies
         this.correctWord = correctWord.toLowerCase();
@@ -75,7 +82,7 @@ public class Controller {
             return "Not enough letters";
         }
 
-        WordBank checkGuess = new WordBank(); // check if word is valid in word bank
+        // check if word is valid in word bank
         if (!checkGuess.checkWord(currentGuess)) {
             // System.out.println("Word not in bank.");
             return "Not in word list";
@@ -95,8 +102,8 @@ public class Controller {
             Text character = characters[currentAttempt - 1][i];
 
             if (correctWord.charAt(i) == guessedChar) {
-                tile.setFill(Variables.WORDLE_GREEN);
-                tile.setStroke(Variables.WORDLE_GREEN);
+                tile.setFill(Constants.WORDLE_GREEN);
+                tile.setStroke(Constants.WORDLE_GREEN);
                 character.setFill(Color.WHITE);
                 letterInc[guessedChar - 'a']--; // decrease letter inc if guessed properly (how many chars not gotten)
                 greenButtons.add(Character.toString(guessedChar)); // add to arraylist for letters that have been greenlit
@@ -116,8 +123,8 @@ public class Controller {
             }
 
             if (letterInc[guessedChar - 'a'] > 0) { // this checks if our letter inc still has any remaining letters not guessed
-                tile.setFill(Variables.WORDLE_YELLOW);
-                tile.setStroke(Variables.WORDLE_YELLOW);
+                tile.setFill(Constants.WORDLE_YELLOW);
+                tile.setStroke(Constants.WORDLE_YELLOW);
                 character.setFill(Color.WHITE);
                 letterInc[guessedChar - 'a']--;
                 boolean isGreen = false;
@@ -133,8 +140,8 @@ public class Controller {
                     yellowButtons.add(Character.toString(currentGuess.charAt(i)));
                 }
             } else {
-                tile.setFill(Variables.WORDLE_GRAY);
-                tile.setStroke(Variables.WORDLE_GRAY);
+                tile.setFill(Constants.WORDLE_GRAY);
+                tile.setStroke(Constants.WORDLE_GRAY);
                 character.setFill(Color.WHITE);
                 boolean isYellow = false;
                 for (String x : yellowButtons) { // same concept as before for checking for buttons already green
@@ -157,7 +164,7 @@ public class Controller {
             return "WIN";
 
         }
-        if (!wordCorrect && currentAttempt >= (maxAttempts + 1)) {
+        if (!wordCorrect && currentAttempt > (maxAttempts)) {
             return "LOSS";
         }
         currentGuess = "";
@@ -209,13 +216,13 @@ public class Controller {
         }
         switch (color) {
             case "green":
-                set.setStyle("-fx-background-color: " + Variables.WORDLE_GREEN_HEX + "; -fx-text-fill: white; -fx-font-size: 19px; -fx-font-weight: bold;");
+                set.setStyle("-fx-background-color: " + Constants.WORDLE_GREEN_HEX + "; -fx-text-fill: white; -fx-font-size: 19px; -fx-font-weight: bold;");
                 break;
             case "yellow":
-                set.setStyle("-fx-background-color: " + Variables.WORDLE_YELLOW_HEX + "; -fx-text-fill: white; -fx-font-size: 19px; -fx-font-weight: bold;");
+                set.setStyle("-fx-background-color: " + Constants.WORDLE_YELLOW_HEX + "; -fx-text-fill: white; -fx-font-size: 19px; -fx-font-weight: bold;");
                 break;
             default:
-                set.setStyle("-fx-background-color: " + Variables.WORDLE_GRAY_HEX + "; -fx-text-fill: white; -fx-font-size: 19px; -fx-font-weight: bold;");
+                set.setStyle("-fx-background-color: " + Constants.WORDLE_GRAY_HEX + "; -fx-text-fill: white; -fx-font-size: 19px; -fx-font-weight: bold;");
                 break;
         }
     }

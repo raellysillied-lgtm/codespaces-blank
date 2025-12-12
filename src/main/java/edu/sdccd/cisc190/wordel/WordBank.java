@@ -1,15 +1,17 @@
-package main.java;
+package main.java.edu.sdccd.cisc190.wordel;
 
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.FileInputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.util.Random;
 
+    /**
+     * Used to check if a word is valid to be used (can be located in a text file resource)
+     * or to randomly load a word from a resource
+    **/
+
 public class WordBank {
-    String fileLocationGuess = "src/main/java/resources/allowed guesses.txt";
-    String fileLocationFinal = "src/main/java/resources/valid final words.txt";
+    String fileLocationGuess = "src/main/java/edu/sdccd/cisc190/wordel/resources/allowed guesses.txt";
+    String fileLocationFinal = "src/main/java/edu/sdccd/cisc190/wordel/resources/valid final words.txt";
     public boolean checkWord(String word) {
         String targetWord = word.trim().toLowerCase();
         if (targetWord.length() != 5) {
