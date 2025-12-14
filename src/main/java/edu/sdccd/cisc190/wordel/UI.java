@@ -57,7 +57,7 @@ public class UI extends Application {
     private Scene scene; // the scene lol
     private VBox rootGuessing;
     private VBox rootChooser; // the screen for when you're choosing the word to be guessed
-        private PasswordField chosenWord; // the rest of these are part of rootChooser
+        private PasswordField wordSelector; // the rest of these are part of rootChooser
         private Button submit;
         private Button random;
         private Text hello;
@@ -268,21 +268,21 @@ public class UI extends Application {
         // Choosing screen
         hello = new Text("Hello, what is the 5-letter word you want your friend to guess for?");
         hello.setFont(new Font(20));
-        chosenWord = new PasswordField();
-        chosenWord.setStyle("-fx-background-color: white; -fx-border-color: grey; -fx-border-width: 2px; -fx-border-radius: 5px;");
-        chosenWord.setPromptText("Enter word");
-        chosenWord.setAlignment(Pos.CENTER);
-        chosenWord.setPrefWidth(120);
-        chosenWord.setMaxWidth(120);
-        chosenWord.setPrefHeight(20);
+        wordSelector = new PasswordField();
+        wordSelector.setStyle("-fx-background-color: white; -fx-border-color: grey; -fx-border-width: 2px; -fx-border-radius: 5px;");
+        wordSelector.setPromptText("Enter word");
+        wordSelector.setAlignment(Pos.CENTER);
+        wordSelector.setPrefWidth(120);
+        wordSelector.setMaxWidth(120);
+        wordSelector.setPrefHeight(20);
         submit = new Button("GO");
         submit.setPrefSize(48, 20);
         submit.setStyle("-fx-background-color: #6aaa64; -fx-border-radius: 5px; -fx-text-fill: white; ");
         submit.setFont(Font.font("Trebuchet MS", FontWeight.BOLD, 14));
         submit.setOnAction(e -> {
-            chosenWord.getOnAction().handle(null);
+            wordSelector.getOnAction().handle(null);
         });
-        HBox wordGiver = new HBox(10, chosenWord, submit);
+        HBox wordGiver = new HBox(10, wordSelector, submit);
         wordGiver.setAlignment(Pos.CENTER);
         Rectangle divider = new Rectangle(320,2);
         divider.setFill(Constants.WORDLE_YELLOW);
@@ -291,7 +291,7 @@ public class UI extends Application {
         random.setPrefHeight(30);
         random.setStyle("-fx-background-color: BLACK; -fx-text-fill: white;");
         random.setOnAction(e -> {
-            chosenWord.setText(wordBank.randomWord());
+            wordSelector.setText(wordBank.randomWord());
         });
 
         // Actually setting up the chooser root
@@ -347,19 +347,19 @@ public class UI extends Application {
         });
 
         // Okay, this changes the root if proper word is given on the choosing screen
-        chosenWord.setOnAction(e -> {
-            String givenWord = chosenWord.getText();
+        wordSelector.setOnAction(e -> {
+            String givenWord = wordSelector.getText();
             boolean isValid = wordBank.checkWord(givenWord);
             if (!isValid) {
-                chosenWord.setText("");
+                wordSelector.setText("");
                 hello.setText("Invalid input, try again.");
             } else {
-                correctWord = chosenWord.getText().toLowerCase();
+                correctWord = wordSelector.getText().toLowerCase();
                 controller.correctWord = correctWord;
                 System.out.println(correctWord);
-                controller.correctWord = chosenWord.getText().toLowerCase(); // controlaa
+                controller.correctWord = wordSelector.getText().toLowerCase(); // controlaa
                 scene.setRoot(guessingScreen);
-                chosenWord.setDisable(true); // disable choosing screen nodes, TODO: fix when implementing a gameplay loop
+                wordSelector.setDisable(true); // disable choosing screen nodes, TODO: fix when implementing a gameplay loop
                 submit.setDisable(true);
                 random.setDisable(true);
                 guessingScreen.setDisable(false);
@@ -555,10 +555,10 @@ public class UI extends Application {
             // change turn and rebuild the board
             playerTurn++;
             rows = playerAttempts[playerTurn % 2];
-            rebuildBoard();
+            buildBoard();
             // Reset UI controls on the choosing screen
-            chosenWord.clear();
-            chosenWord.setDisable(false);
+            wordSelector.clear();
+            wordSelector.setDisable(false);
             submit.setDisable(false);
             random.setDisable(false);
             hello.setText("Enter a 5-letter word:");
@@ -593,7 +593,7 @@ public class UI extends Application {
         updatePlayerIcon();
     }
 
-    public void rebuildBoard() {
+    public void buildBoard() {
         tiles = new Rectangle[rows][cols];
         characters = new Text[rows][cols];
         wordGrid.getChildren().clear(); // remove everything from the current grid
@@ -707,7 +707,7 @@ public class UI extends Application {
         correctWord = wordBank.randomWord();
         controller.correctWord = correctWord;
         System.out.println(correctWord);
-        chosenWord.setDisable(true);
+        wordSelector.setDisable(true);
         submit.setDisable(true);
         random.setDisable(true);
         guessingScreen.setDisable(false);
@@ -719,9 +719,9 @@ public class UI extends Application {
         guessingScreen.setOpacity(1);
         guessingScreen.setTranslateX(0);
         guessingScreen.setTranslateY(0);
-        scene.setRoot(guessingScreen);
+        scene.setRoot(guessingScreen); // set screen to guessing word
 
-        rebuildBoard();
+        buildBoard();
         controller.resetGameState();
 
         // Reset position & opacity for entrance animation
@@ -750,29 +750,33 @@ public class UI extends Application {
         double delayIncrement = 0.02; // seconds between each button animation
         int rowIndex = 0;
         for (javafx.scene.Node rowNode : ((VBox) rootGuessing.getChildren().get(1)).getChildren()) { // rootGuessing.getChildren().get(1) == keyboard VBox
-            if (!(rowNode instanceof HBox)) continue;
+            if (!(rowNode instanceof HBox)) { // dont continue if not an HBox (keyboard VBox == 3 HBoxes)
+                continue;
+            }
             HBox row = (HBox) rowNode;
             int colIndex = 0;
-            for (javafx.scene.Node node : row.getChildren()) {
-                if (!(node instanceof Button)) continue;
+            for (javafx.scene.Node node : row.getChildren()) { // get buttons of each row
+                if (!(node instanceof Button)) { // dont continue if not a button (row HBox == several buttons
+                    continue;
+                }
                 Button button = (Button) node;
 
                 // Start above the normal position and invisible
-                button.setTranslateX(-50 * (((rowIndex % 2) - 0.5) * 2));
+                button.setTranslateX(-50 * (((rowIndex % 2) - 0.5) * 2)); // offset horizontally based off of what row
                 button.setOpacity(0);
 
-                TranslateTransition drop = new TranslateTransition(Duration.millis(750), button);
-                drop.setFromX(-50 * (((rowIndex % 2) - 0.5) * 2));
-                drop.setToX(0);
-                drop.setInterpolator(Interpolator.SPLINE(.5,0,.66,1));
+                TranslateTransition slide = new TranslateTransition(Duration.millis(750), button);
+                slide.setFromX(-50 * (((rowIndex % 2) - 0.5) * 2));
+                slide.setToX(0);
+                slide.setInterpolator(Interpolator.SPLINE(.5,0,.66,1));
 
                 FadeTransition fade = new FadeTransition(Duration.millis(500), button);
                 fade.setFromValue(0);
                 fade.setToValue(1);
                 fade.setInterpolator(Interpolator.EASE_BOTH);
 
-                ParallelTransition transition = new ParallelTransition(drop, fade);
-                transition.setDelay(Duration.seconds((rowIndex * row.getChildren().size() + colIndex) * delayIncrement));
+                ParallelTransition transition = new ParallelTransition(slide, fade);
+                transition.setDelay(Duration.seconds((rowIndex * row.getChildren().size() + colIndex) * delayIncrement)); // set delay based on row and column
                 transition.play();
 
                 colIndex++;
